@@ -6,7 +6,7 @@ import torch.optim as optim
 import torch.nn.functional as F
 
 from Models import DQN
-from Zuriya_Akiva_Project.memory_data import SamplesMemory
+from memory_data import SamplesMemory
 
 
 class Agent:

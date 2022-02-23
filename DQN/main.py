@@ -3,7 +3,7 @@ import argparse
 import torch
 
 from Agents import DQNAgent
-from Zuriya_Akiva_Project.utils import set_seed, quantize_space
+from utils import set_seed, quantize_space
 
 
 def main():
