@@ -1,0 +1,8 @@
+version 3, but implementation by tensor-flow:
+    https://github.com/BolunDai0216/DeepReinforcementLearning/tree/main/HW3
+
+version 3, implementation by pytorch
+    https://github.com/CoderAT13/BipedalWalkerHardcore-SAC
+
+version 2, implementation by pytorch
+    https://github.com/1110589721/BipedalWalkerHardcore-v2
