@@ -1,9 +1,13 @@
+import nni
 import numpy as np
 from statistics import mean
-from termcolor import colored
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join('../..', 'Reinforcement_Project')))
 
 from Models import DQN
 from memory_data import SamplesMemory
@@ -44,7 +48,7 @@ class Agent:
     def learn(self):
         pass
 
-    def train(self, env, episodes_num, steps_num, learn_freq):
+    def train(self, env, episodes_num, steps_num, learn_freq, is_nni=False):
         losses = []
         scores_list = []
 
@@ -75,32 +79,40 @@ class Agent:
             scores_list.append(score)
             avg_reward = mean(scores_list[-100:]) if len(scores_list) >= 100 else mean(scores_list)
             print(f'\nScore: {score}, Mean average until now (up to last 100): '
-                  f'{colored(avg_reward, "magenta")}')
+                  f'{avg_reward}')
+
+            if is_nni:
+                if episode % 20 == 0:
+                    nni.report_intermediate_result(episode)
 
             if avg_reward > 200 and len(scores_list) >= 100:
                 print(f'Mission accomplished! average reward: {avg_reward} in episode {episode}.')
+                break
 
                 # todo: save model
                 # todo: plots
+
+        if is_nni:
+            nni.report_final_result(episode)
 
         env.close()
 
 
 class DQNAgent(Agent):
     def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                 max_eps, min_eps, eps_decay, target_update, device):
+                 max_eps, min_eps, eps_decay, target_update, hidd1_size, hidd2_size, device):
         super(DQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
                                        min_eps, eps_decay, device)
 
-        self.hidd1 = 64
-        self.hidd2 = 128
+        self.hidd1 = hidd1_size
+        self.hidd2 = hidd2_size
         self.output_size = output_size
         self.policy_net = DQN(input_size, output_size, self.hidd1, self.hidd2).to(device)
         self.target_net = DQN(input_size, output_size, self.hidd1, self.hidd2).to(device)  # copy.deepcopy?
         self.target_net.load_state_dict(self.policy_net.state_dict())
         self.target_net.eval()
 
-        self.optimizer = optim.Adam(self.policy_net.parameters(), lr)
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
 
         self.target_update = target_update
         self.update = 0

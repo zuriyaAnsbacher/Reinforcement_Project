@@ -1,6 +1,11 @@
+import nni
 import gym
 import argparse
 import torch
+
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join('../..', 'Reinforcement_Project')))
 
 from Agents import DQNAgent
 from utils import set_seed, quantize_space
@@ -22,13 +27,15 @@ def main():
     parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
     parser.add_argument('--lr', type=float, default=1e-4)
     parser.add_argument('--episodes', type=int, default=800, help='number of episodes in train')
-    parser.add_argument('--max_steps', type=int, default=10000, help='number of time steps in an episode (train)')
+    parser.add_argument('--max_steps', type=int, default=1000, help='number of time steps in an episode (train)')
     parser.add_argument('--target_update', type=int, default=100, help='number of updates')
     parser.add_argument('--learn_freq', type=int, default=2, help='number of steps for agent weights update')
     parser.add_argument('--eps_decay', type=float, default=0.95)
     parser.add_argument('--cuda_device', type=int, default=0)
     parser.add_argument('--max_eps', type=float, default=1.0)
     parser.add_argument('--min_eps', type=float, default=0.01)
+    parser.add_argument('--hidd1_size', type=int, default=64)
+    parser.add_argument('--hidd2_size', type=int, default=64)
 
     args = parser.parse_args()
 
@@ -46,7 +53,7 @@ def main():
 
     agent_params = [state_size, len(action_space), action_space, args.batch_size,
                     args.lr, args.gamma, args.memory_size, args.max_eps, args.min_eps,
-                    args.eps_decay, args.target_update, device]
+                    args.eps_decay, args.target_update, args.hidd1_size, args.hidd2_size, device]
 
     if args.model == 'dqn':
         agent = DQNAgent(*agent_params)
@@ -56,5 +63,50 @@ def main():
         agent.train(*train_params)
 
 
+def main_nni():
+    # fixed params
+    params = {'cuda_device': 0,
+              'model': 'dqn',
+              'train': True,
+              'memory_size': 1000000,
+              'episodes': 1000,
+              'max_eps': 1.0,
+              'min_eps': 0.01}
+
+    # nni params
+    nni_params = nni.get_next_parameter()
+    params['batch_size'] = int(nni_params['batch_size'])
+    params['gamma'] = float(nni_params['gamma'])
+    params['lr'] = float(nni_params['lr'])
+    params['target_update'] = int(nni_params['target_update'])
+    params['learn_freq'] = int(nni_params['learn_freq'])
+    params['eps_decay'] = float(nni_params['eps_decay'])
+    params['max_steps'] = int(nni_params['max_steps'])
+    params['hidd1_size'] = int(nni_params['hidd1_size'])
+    params['hidd2_size'] = int(nni_params['hidd2_size'])
+
+    device = torch.device(f"cuda:{params['cuda_device']}" if torch.cuda.is_available() else "cpu")
+    print(device)
+
+    env = gym.make('LunarLanderContinuous-v2')
+    set_seed(env, seed=0)
+
+    state_size = 8  # state vector dim
+    action_space = quantize_space(actions_range=[(-1, 1), (-1, 1)], bins=[5, 5])
+
+    agent_params = [state_size, len(action_space), action_space, params['batch_size'],
+                    params['lr'], params['gamma'], params['memory_size'], params['max_eps'],
+                    params['min_eps'], params['eps_decay'], params['target_update'],
+                    params['hidd1_size'], params['hidd2_size'], device]
+
+    if params['model'] == 'dqn':
+        agent = DQNAgent(*agent_params)
+
+    if params['train']:
+        train_params = [env, params['episodes'], params['max_steps'], params['learn_freq']]
+        agent.train(*train_params, is_nni=True)
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    main_nni()
