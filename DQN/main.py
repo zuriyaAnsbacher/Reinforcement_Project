@@ -7,42 +7,44 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join('../..', 'Reinforcement_Project')))
 
-from Agents import DQNAgent
-from utils import set_seed, quantize_space
+from Agents import DQNAgent, DoubleDQNAgent, DuelingDDQNAgent
+from utils import set_seed, quantize_space, test
 
 
+# todo: adjust the main to all kinds of DQN
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', choices=['dqn'], default='dqn')
-    parser.add_argument('--train', default=True, help='train agent')
-    # parser.add_argument('--file', default=None, help='weights file used in test')
+    parser.add_argument('--model', choices=['dqn', 'ddqn', 'd3qn'], default='dqn')
+    parser.add_argument('--train', default=False, help='train agent')
+    parser.add_argument('--set_num', type=str, default='1')
     # parser.add_argument('--verbose', choices=[0, 1, 2, 3], default=0, help=' Verbose used in train '
     #                                                                        ' 0 (no plots, no logs, no video), '
     #                                                                        ' 1 (yes plots, no logs, no video),'
     #                                                                        ' 2 (yes plots, yes logs, no video), '
     #                                                                        ' 3 (yes plots, yes logs, yes video)')
-    # parser.add_argument('--render', default=True, help='render video of the environment')
-    parser.add_argument('--batch_size', default=64)
+    parser.add_argument('--batch_size', default=128)
     parser.add_argument('--memory_size', type=int, default=100000)  # todo: up to 1e6
-    parser.add_argument('--gamma', type=float, default=0.99, help='discount factor')
-    parser.add_argument('--lr', type=float, default=1e-4)
+    parser.add_argument('--gamma', type=float, default=0.9814456989493644, help='discount factor')
+    parser.add_argument('--lr', type=float, default=0.0005596196627828316)
     parser.add_argument('--episodes', type=int, default=800, help='number of episodes in train')
     parser.add_argument('--max_steps', type=int, default=1000, help='number of time steps in an episode (train)')
-    parser.add_argument('--target_update', type=int, default=100, help='number of updates')
-    parser.add_argument('--learn_freq', type=int, default=2, help='number of steps for agent weights update')
-    parser.add_argument('--eps_decay', type=float, default=0.95)
+    parser.add_argument('--target_update', type=int, default=400, help='number of updates')
+    parser.add_argument('--learn_freq', type=int, default=3, help='number of steps for agent weights update')
+    parser.add_argument('--eps_decay', type=float, default=0.9535960248897746)
     parser.add_argument('--cuda_device', type=int, default=0)
     parser.add_argument('--max_eps', type=float, default=1.0)
     parser.add_argument('--min_eps', type=float, default=0.01)
-    parser.add_argument('--hidd1_size', type=int, default=64)
-    parser.add_argument('--hidd2_size', type=int, default=64)
+    parser.add_argument('--hidden_layers_size', type=list, default=[64, 64])
 
     args = parser.parse_args()
 
     device = torch.device(f"cuda:{args.cuda_device}" if torch.cuda.is_available() else "cpu")
     print(device)
 
-    # todo: add creating path for saving results
+    paths = {'saved_model_path': './results/trained_models/',
+             'saved_plots_path': './results/plots/',
+             'args_set_num': args.set_num}
+
     # todo: decide how to do the train and the test (each X episode, check on test? (Ran) or if get 200 on train, check on test?)
 
     env = gym.make('LunarLanderContinuous-v2')
@@ -53,14 +55,20 @@ def main():
 
     agent_params = [state_size, len(action_space), action_space, args.batch_size,
                     args.lr, args.gamma, args.memory_size, args.max_eps, args.min_eps,
-                    args.eps_decay, args.target_update, args.hidd1_size, args.hidd2_size, device]
+                    args.eps_decay, args.target_update, args.hidden_layers_size, device]
 
     if args.model == 'dqn':
         agent = DQNAgent(*agent_params)
+    elif args.model == 'ddqn':
+        agent = DoubleDQNAgent(*agent_params)  # todo: check
+    elif args.model == 'd3qn':
+        agent = DuelingDDQNAgent(*agent_params)  # todo: check
 
     if args.train:
-        train_params = [env, args.episodes, args.max_steps, args.learn_freq]
+        train_params = [env, args.episodes, args.max_steps, args.learn_freq, paths]
         agent.train(*train_params)
+    else:
+        test(agent, env, paths, agent.model_name)
 
 
 def main_nni():
@@ -88,6 +96,8 @@ def main_nni():
     device = torch.device(f"cuda:{params['cuda_device']}" if torch.cuda.is_available() else "cpu")
     print(device)
 
+    paths = None
+
     env = gym.make('LunarLanderContinuous-v2')
     set_seed(env, seed=0)
 
@@ -103,10 +113,10 @@ def main_nni():
         agent = DQNAgent(*agent_params)
 
     if params['train']:
-        train_params = [env, params['episodes'], params['max_steps'], params['learn_freq']]
+        train_params = [env, params['episodes'], params['max_steps'], params['learn_freq'], paths]
         agent.train(*train_params, is_nni=True)
 
 
 if __name__ == "__main__":
-    # main()
-    main_nni()
+    main()
+    # main_nni()
