@@ -15,7 +15,6 @@ from utils import create_plot
 
 # todo: re-write the function 'learn' three agents (dqn,ddqn,d3dq) together? (with a condition in next_q_val calculate)
 
-
 class Agent:
     def __init__(self, action_space, batch_size, gamma, memory_size,
                  max_eps, min_eps, eps_decay, device):
@@ -114,11 +113,10 @@ class Agent:
 
         env.close()
 
-
 class DQNAgent(Agent):
     def __init__(self, input_size, output_size, action_space, memory_size, max_eps, min_eps,
                  batch_size, lr, gamma,  eps_decay, target_update, hidden_layers_size, device):
-        super(DQNAgent, self).__init__(action_space, memory_size, max_eps, batch_size, gamma,
+        super(DQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
                                        min_eps, eps_decay, device)
 
         self.model_name = 'DQN'
