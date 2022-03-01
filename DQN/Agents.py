@@ -103,7 +103,7 @@ class Agent:
 
                 if not is_nni:
                     filename = ''.join([self.model_name, '_params', paths['args_set_num']])
-                    self.save(''.join([paths['saved_model_path'], filename, 'episode', str(episode), '.pth']))
+                    self.save(''.join([paths['saved_model_path'], filename, '.pth']))
                     create_plot(scores_list, self.model_name, ''.join([paths['saved_plots_path'], 'train_', filename, '.png']))
 
                 break
@@ -158,8 +158,9 @@ class DQNAgent(Agent):
 class DoubleDQNAgent(DQNAgent):
     def __init__(self, input_size, output_size, action_space, memory_size, max_eps, min_eps,
                  batch_size, lr, gamma,  eps_decay, target_update, hidden_layers_size, device):
-        super(DoubleDQNAgent, self).__init__(input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                                             max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device)
+        super(DoubleDQNAgent, self).__init__(input_size, output_size, action_space, memory_size, max_eps, min_eps,
+                                             batch_size, lr, gamma, eps_decay, target_update, hidden_layers_size, device)
+
         self.model_name = 'DoubleDQN'
 
     def learn(self):
