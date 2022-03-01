@@ -1,0 +1,32 @@
+{
+  "dqn_params1":
+  {"batch_size": 128,
+    "gamma": 0.9814456989493644,
+    "lr": 0.0005596196627828316,
+    "max_steps": 1000,
+    "target_update": 400,
+    "learn_freq": 3,
+    "eps_decay": 0.9535960248897746,
+    "hidden_layers_size":  [64, 64]
+  },
+  "dqn_params2":
+  {"batch_size": 256,
+    "gamma": 0.9791633725985145,
+    "lr": 0.0015830847211986054,
+    "max_steps": 900,
+    "target_update": 400,
+    "learn_freq": 3,
+    "eps_decay": 0.9590128678975974,
+    "hidden_layers_size":  [256, 64]
+  },
+  "dqn_params3":
+  {"batch_size": 256,
+    "gamma": 0.9779098611253499,
+    "lr": 0.0015830847211986054,
+    "max_steps": 900,
+    "target_update": 400,
+    "learn_freq": 3,
+    "eps_decay": 0.9540504837936837,
+    "hidden_layers_size":  [256, 64]
+  }
+}
