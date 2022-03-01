@@ -56,7 +56,7 @@ def test(agent, env, paths, model_name, episode_num=100, steps_num=1000):
     path_to_save_plot = ''.join([paths['saved_plots_path'], 'test_', file_name, '.png'])
 
     agent.load(saved_trained_model)
-    agent.policy_net.eval()
+    agent.set_eval()
 
     scores_list = []
     for episode in range(1, episode_num + 1):
