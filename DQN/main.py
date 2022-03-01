@@ -1,5 +1,6 @@
 import nni
 import gym
+import json
 import argparse
 import torch
 
@@ -13,30 +14,36 @@ from utils import set_seed, quantize_space, test
 
 # todo: adjust the main to all kinds of DQN
 def main():
+
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model', choices=['dqn', 'ddqn', 'd3qn'], default='dqn')
-    parser.add_argument('--train', default=False, help='train agent')
+    # args that change each run
+    parser.add_argument('--model', choices=['dqn', 'ddqn', 'd3qn'], default='ddqn')
+    parser.add_argument('--train', default=True, help='train agent')
+    parser.add_argument('--use_nni_params', default=False, help='if true, get params from json file')
     parser.add_argument('--set_num', type=str, default='1')
-    # parser.add_argument('--verbose', choices=[0, 1, 2, 3], default=0, help=' Verbose used in train '
-    #                                                                        ' 0 (no plots, no logs, no video), '
-    #                                                                        ' 1 (yes plots, no logs, no video),'
-    #                                                                        ' 2 (yes plots, yes logs, no video), '
-    #                                                                        ' 3 (yes plots, yes logs, yes video)')
-    parser.add_argument('--batch_size', default=128)
-    parser.add_argument('--memory_size', type=int, default=100000)  # todo: up to 1e6
-    parser.add_argument('--gamma', type=float, default=0.9814456989493644, help='discount factor')
-    parser.add_argument('--lr', type=float, default=0.0005596196627828316)
+
+    # args that usually stay fixed
+    parser.add_argument('--memory_size', type=int, default=100000)
     parser.add_argument('--episodes', type=int, default=800, help='number of episodes in train')
-    parser.add_argument('--max_steps', type=int, default=1000, help='number of time steps in an episode (train)')
-    parser.add_argument('--target_update', type=int, default=400, help='number of updates')
-    parser.add_argument('--learn_freq', type=int, default=3, help='number of steps for agent weights update')
-    parser.add_argument('--eps_decay', type=float, default=0.9535960248897746)
     parser.add_argument('--cuda_device', type=int, default=0)
     parser.add_argument('--max_eps', type=float, default=1.0)
     parser.add_argument('--min_eps', type=float, default=0.01)
-    parser.add_argument('--hidden_layers_size', type=list, default=[64, 64])
 
     args = parser.parse_args()
+
+    if args.use_nni_params:
+        with open('best_params.json') as json_file:
+            best_params = json.load(json_file)[f'{args.model}_params{args.set_num}']
+    else:
+        best_params = {"batch_size": 128,
+                       "gamma": 0.98,
+                       "lr": 0.003,
+                       "max_steps": 1000,
+                       "target_update": 400,
+                       "learn_freq": 4,
+                       "eps_decay": 0.96,
+                       "hidden_layers_size":  [64, 64]
+                       }
 
     device = torch.device(f"cuda:{args.cuda_device}" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -45,17 +52,15 @@ def main():
              'saved_plots_path': './results/plots/',
              'args_set_num': args.set_num}
 
-    # todo: decide how to do the train and the test (each X episode, check on test? (Ran) or if get 200 on train, check on test?)
-
     env = gym.make('LunarLanderContinuous-v2')
     set_seed(env, seed=0)
 
     state_size = 8  # state vector dim
     action_space = quantize_space(actions_range=[(-1, 1), (-1, 1)], bins=[5, 5])
 
-    agent_params = [state_size, len(action_space), action_space, args.batch_size,
-                    args.lr, args.gamma, args.memory_size, args.max_eps, args.min_eps,
-                    args.eps_decay, args.target_update, args.hidden_layers_size, device]
+    agent_params = [state_size, len(action_space), action_space, args.memory_size, args.max_eps, args.min_eps,
+                    best_params['batch_size'], best_params['lr'], best_params['gamma'], best_params['eps_decay'],
+                    best_params['target_update'], best_params['hidden_layers_size'], device]
 
     if args.model == 'dqn':
         agent = DQNAgent(*agent_params)
@@ -65,7 +70,7 @@ def main():
         agent = DuelingDDQNAgent(*agent_params)  # todo: check
 
     if args.train:
-        train_params = [env, args.episodes, args.max_steps, args.learn_freq, paths]
+        train_params = [env, paths, args.episodes, best_params['max_steps'], best_params['learn_freq']]
         agent.train(*train_params)
     else:
         test(agent, env, paths, agent.model_name)
@@ -113,7 +118,7 @@ def main_nni():
         agent = DQNAgent(*agent_params)
 
     if params['train']:
-        train_params = [env, params['episodes'], params['max_steps'], params['learn_freq'], paths]
+        train_params = [env, paths, params['episodes'], params['max_steps'], params['learn_freq']]
         agent.train(*train_params, is_nni=True)
 
 
