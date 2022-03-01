@@ -9,8 +9,11 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join('../..', 'Reinforcement_Project')))
 
-from Models import DQN
+from Models import DQN, DuelingDQN
 from memory_data import SamplesMemory
+from utils import create_plot
+
+# todo: re-write the function 'learn' three agents (dqn,ddqn,d3dq) together? (with a condition in next_q_val calculate)
 
 
 class Agent:
@@ -24,6 +27,7 @@ class Agent:
         self.cur_eps = max_eps
         self.policy_net = None
         self.output_size = None
+        self.model_name = None
 
         self.memory = SamplesMemory(memory_size, device)
         self.batch_size = batch_size
@@ -33,9 +37,9 @@ class Agent:
 
         self.device = device
 
-    def get_action(self, state):
+    def get_action(self, state, just_greedy=False):
         # epsilon greedy
-        if np.random.random() < self.cur_eps:  # exploration
+        if not just_greedy and np.random.random() < self.cur_eps:  # exploration
             return self.idx2action[np.random.choice(self.output_size)]
         else:  # exploitation
             with torch.no_grad():
@@ -48,7 +52,13 @@ class Agent:
     def learn(self):
         pass
 
-    def train(self, env, episodes_num, steps_num, learn_freq, is_nni=False):
+    def save(self, file_path):
+        torch.save(self.policy_net.state_dict(), file_path)
+
+    def load(self, file_path):
+        self.policy_net.load_state_dict(torch.load(file_path, map_location=self.device))
+
+    def train(self, env, episodes_num, steps_num, learn_freq, paths, is_nni=False):
         losses = []
         scores_list = []
 
@@ -81,16 +91,19 @@ class Agent:
             print(f'\nScore: {score}, Mean average until now (up to last 100): '
                   f'{avg_reward}')
 
-            if is_nni:
-                if episode % 20 == 0:
-                    nni.report_intermediate_result(episode)
+            # if is_nni:
+            #     if episode % 20 == 0:
+            #         nni.report_intermediate_result(episode)
 
-            if avg_reward > 200 and len(scores_list) >= 100:
+            if avg_reward > 210 and len(scores_list) >= 100:
                 print(f'Mission accomplished! average reward: {avg_reward} in episode {episode}.')
-                break
 
-                # todo: save model
-                # todo: plots
+                if not is_nni:
+                    filename = ''.join([self.model_name, '_params', paths['args_set_num']])
+                    self.save(''.join([paths['saved_model_path'], filename, 'episode', str(episode), '.pth']))
+                    create_plot(scores_list, self.model_name, ''.join([paths['saved_plots_path'], 'train_', filename, '.png']))
+
+                break
 
         if is_nni:
             nni.report_final_result(episode)
@@ -100,12 +113,13 @@ class Agent:
 
 class DQNAgent(Agent):
     def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                 max_eps, min_eps, eps_decay, target_update, hidd1_size, hidd2_size, device):
+                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
         super(DQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
                                        min_eps, eps_decay, device)
 
-        self.hidd1 = hidd1_size
-        self.hidd2 = hidd2_size
+        self.model_name = 'DQN'
+        self.hidd1 = hidden_layers_size[0]
+        self.hidd2 = hidden_layers_size[1]
         self.output_size = output_size
         self.policy_net = DQN(input_size, output_size, self.hidd1, self.hidd2).to(device)
         self.target_net = DQN(input_size, output_size, self.hidd1, self.hidd2).to(device)  # copy.deepcopy?
@@ -138,4 +152,85 @@ class DQNAgent(Agent):
             self.target_net.load_state_dict(self.policy_net.state_dict())
 
         return loss.item()
+
+
+class DoubleDQNAgent(DQNAgent):
+    def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
+                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
+        super(DoubleDQNAgent, self).__init__(input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
+                                             max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device)
+        self.model_name = 'DoubleDQN'
+
+    def learn(self):
+        states, actions, rewards, next_states, dones = self.memory.get_batch(self.batch_size)
+
+        q_val = self.policy_net(states).gather(1, actions)
+        with torch.no_grad():
+            next_q_values_argmax = self.policy_net(next_states).argmax(1)
+        next_q_val = self.target_net(next_states).gather(1, next_q_values_argmax.unsqueeze(1)).detach()
+
+        # formula
+        target = (rewards + self.gamma * next_q_val * (1 - dones)).to(self.device)
+
+        # loss and optimizer
+        self.optimizer.zero_grad()
+        loss = F.smooth_l1_loss(q_val, target)
+        loss.backward()
+        self.optimizer.step()
+        self.update += 1
+
+        # Every self.target_update updates, clone the policy_net
+        if self.update % self.target_update == 0:
+            self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        return loss.item()
+
+
+class DuelingDDQNAgent(Agent):
+    def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
+                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
+        super(DuelingDDQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
+                                               min_eps, eps_decay, device)
+        self.model_name = 'DuelingDDQN'
+        self.hid_size_linear = hidden_layers_size[0]  # 64
+        self.hid_size_adv = hidden_layers_size[1]  # 32
+        self.hid_size_val = hidden_layers_size[2]  # 32
+        self.output_size = output_size
+        self.policy_net = DuelingDQN(input_size, output_size, self.hid_size_linear, self.hid_size_adv, self.hid_size_val)\
+            .to(device)
+        # define target net
+        self.target_net = DuelingDQN(input_size, output_size, self.hid_size_linear, self.hid_size_adv, self.hid_size_val)\
+            .to(device)
+        self.target_net.load_state_dict(self.policy_net.state_dict())
+        self.target_net.eval()
+
+        self.optimizer = optim.Adam(self.policy_net.parameters(), lr=lr)
+
+        self.target_update = target_update
+        self.update = 0
+
+    def learn(self):
+        states, actions, rewards, next_states, dones = self.memory.get_batch(self.batch_size)
+
+        q_val = self.policy_net(states).gather(1, actions)
+        with torch.no_grad():
+            next_q_val_argmax = self.policy_net(next_states).argmax(1)
+        next_q_val = self.target_net(next_states).gather(1, next_q_val_argmax.unsqueeze(1)).detach()
+
+        # formula
+        target = (rewards + self.gamma * next_q_val * (1 - dones)).to(self.device)
+
+        # loss and optimizer
+        self.optimizer.zero_grad()
+        loss = F.smooth_l1_loss(q_val, target)
+        loss.backward()
+        self.optimizer.step()
+        self.update += 1
+
+        # Every self.target_update updates, clone the policy_net
+        if self.update % self.target_update == 0:
+            self.target_net.load_state_dict(self.policy_net.state_dict())
+
+        return loss.item()
+
 
