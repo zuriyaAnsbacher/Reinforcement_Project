@@ -52,13 +52,16 @@ class Agent:
     def learn(self):
         pass
 
+    def set_eval(self):
+        self.policy_net.eval()
+
     def save(self, file_path):
         torch.save(self.policy_net.state_dict(), file_path)
 
     def load(self, file_path):
         self.policy_net.load_state_dict(torch.load(file_path, map_location=self.device))
 
-    def train(self, env, episodes_num, steps_num, learn_freq, paths, is_nni=False):
+    def train(self, env, paths, episodes_num, steps_num, learn_freq, is_nni=False):
         losses = []
         scores_list = []
 
@@ -95,7 +98,8 @@ class Agent:
             #     if episode % 20 == 0:
             #         nni.report_intermediate_result(episode)
 
-            if avg_reward > 210 and len(scores_list) >= 100:
+            goal = 200 if not is_nni else 210
+            if avg_reward > goal and len(scores_list) >= 100:
                 print(f'Mission accomplished! average reward: {avg_reward} in episode {episode}.')
 
                 if not is_nni:
@@ -112,9 +116,9 @@ class Agent:
 
 
 class DQNAgent(Agent):
-    def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
-        super(DQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
+    def __init__(self, input_size, output_size, action_space, memory_size, max_eps, min_eps,
+                 batch_size, lr, gamma,  eps_decay, target_update, hidden_layers_size, device):
+        super(DQNAgent, self).__init__(action_space, memory_size, max_eps, batch_size, gamma,
                                        min_eps, eps_decay, device)
 
         self.model_name = 'DQN'
@@ -153,10 +157,9 @@ class DQNAgent(Agent):
 
         return loss.item()
 
-
 class DoubleDQNAgent(DQNAgent):
-    def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
+    def __init__(self, input_size, output_size, action_space, memory_size, max_eps, min_eps,
+                 batch_size, lr, gamma,  eps_decay, target_update, hidden_layers_size, device):
         super(DoubleDQNAgent, self).__init__(input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
                                              max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device)
         self.model_name = 'DoubleDQN'
@@ -187,8 +190,8 @@ class DoubleDQNAgent(DQNAgent):
 
 
 class DuelingDDQNAgent(Agent):
-    def __init__(self, input_size, output_size, action_space, batch_size, lr, gamma, memory_size,
-                 max_eps, min_eps, eps_decay, target_update, hidden_layers_size, device):
+    def __init__(self, input_size, output_size, action_space, memory_size, max_eps, min_eps,
+                 batch_size, lr, gamma,  eps_decay, target_update, hidden_layers_size, device):
         super(DuelingDDQNAgent, self).__init__(action_space, batch_size, gamma, memory_size, max_eps,
                                                min_eps, eps_decay, device)
         self.model_name = 'DuelingDDQN'
