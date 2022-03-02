@@ -1,4 +1,5 @@
 import torch.nn as nn
+import torch.nn.functional as F
 
 
 class DQN(nn.Module):
@@ -32,8 +33,8 @@ class DuelingDQN(nn.Module):
         self.linear_val_2 = nn.Linear(val_hid_size, 1)
 
     def forward(self, state):
-        x = nn.ReLU(self.linear1(state))
-        adv = self.linear_adv_2(nn.ReLU(self.linear_adv_1(x)))
-        val = self.linear_val_2(nn.ReLU(self.linear_val_1(x)))
+        x = F.relu(self.linear1(state))
+        adv = self.linear_adv_2(F.relu(self.linear_adv_1(x)))
+        val = self.linear_val_2(F.relu(self.linear_val_1(x)))
 
         return val + (adv - adv.mean())
