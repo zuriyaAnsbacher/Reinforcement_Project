@@ -7,7 +7,7 @@
     "target_update": 400,
     "learn_freq": 3,
     "eps_decay": 0.9535960248897746,
-    "hidden_layers_size":  [64, 64]
+    "hidden_layers_size": [64, 64]
   },
   "dqn_params2":
   {"batch_size": 256,
@@ -17,7 +17,7 @@
     "target_update": 400,
     "learn_freq": 3,
     "eps_decay": 0.9590128678975974,
-    "hidden_layers_size":  [256, 64]
+    "hidden_layers_size": [256, 64]
   },
   "dqn_params3":
   {"batch_size": 256,
@@ -27,6 +27,80 @@
     "target_update": 400,
     "learn_freq": 3,
     "eps_decay": 0.9540504837936837,
-    "hidden_layers_size":  [256, 64]
+    "hidden_layers_size": [256, 64]
+  },
+
+
+  "ddqn_params1":
+  {"batch_size": 128,
+    "gamma": 0.9899203271610234,
+    "lr": 0.0018909105202777432,
+    "target_update": 200,
+    "learn_freq": 8,
+    "eps_decay": 0.9799874992716769,
+    "max_steps": 800,
+    "hidden_layers_size": [64, 64]
+  },
+  "ddqn_params2":
+  {"batch_size": 64,
+    "gamma": 0.9762960720643985,
+    "lr": 0.001195793284941829,
+    "target_update": 500,
+    "learn_freq": 5,
+    "eps_decay": 0.9498927993008012,
+    "max_steps": 800,
+    "hidden_layers_size": [28, 256]
+  },
+  "ddqn_params3":
+  {"batch_size": 128,
+    "gamma": 0.9856368308835148,
+    "lr": 0.002066460106748642,
+    "target_update": 100,
+    "learn_freq": 8,
+    "eps_decay": 0.9826503107232751,
+    "max_steps": 500,
+    "hidden_layers_size": [64, 64]
+  },
+  "ddqn_params4":
+  {"batch_size": 128,
+    "gamma": 0.9870224529034914,
+    "lr": 0.0020737799461683507,
+    "target_update": 200,
+    "learn_freq": 8,
+    "eps_decay": 0.9797035413162106,
+    "max_steps": 500,
+    "hidden_layers_size": [64, 64]
+  },
+
+
+  "d3qn_params1":
+  {"batch_size": 64,
+    "gamma": 0.9828312425604563,
+    "lr": 0.001920259375173547,
+    "target_update": 100,
+    "learn_freq": 4,
+    "eps_decay": 0.9519693635850672,
+    "max_steps": 1000,
+    "hidden_layers_size": [256, 32, 128]
+  },
+  "d3qn_params2":
+  {"batch_size": 64,
+    "gamma": 0.9811211904456855,
+    "lr": 0.00126638348608404,
+    "target_update": 100,
+    "learn_freq": 4,
+    "eps_decay": 0.9621581707131307,
+    "max_steps": 1000,
+    "hidden_layers_size": [256, 32, 128]
+  },
+  "d3qn_params3":
+  {"batch_size": 64,
+    "gamma": 0.9823665441269939,
+    "lr": 0.0009532131056317392,
+    "target_update": 200,
+    "learn_freq": 7,
+    "eps_decay": 0.9637796533408077,
+    "max_steps": 1000,
+    "hidden_layers_size": [256, 32, 128]
   }
 }
