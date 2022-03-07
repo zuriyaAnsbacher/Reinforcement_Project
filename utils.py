@@ -51,7 +51,7 @@ def test(agent, env, paths, model_name, episode_num=100, steps_num=1000, record=
     path_to_save_plot = ''.join([paths['saved_plots_path'], 'test_', file_name, '.png'])
 
     if record:
-        vid_path = ''.join([paths['save_video_path'], f"vid_test_{model_name}.mp4"])
+        vid_path = ''.join([paths['saved_video_path'], f"vid_test_{model_name}.mp4"])
         video = video_recorder.VideoRecorder(env, vid_path)
 
     agent.load(saved_trained_model)
