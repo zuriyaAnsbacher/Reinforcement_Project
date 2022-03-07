@@ -3,13 +3,8 @@ from statistics import mean
 from itertools import product
 import random
 import torch
-import glob
-from gym.wrappers import Monitor
-import io
-import base64
-from IPython.display import HTML
-from IPython import display as ipythondisplay
 import matplotlib.pyplot as plt
+from gym.wrappers.monitoring import video_recorder
 
 
 def set_seed(env, seed):
@@ -50,10 +45,14 @@ def create_plot(scores, model_name, save_path):
     plt.close()
 
 
-def test(agent, env, paths, model_name, episode_num=100, steps_num=1000):
+def test(agent, env, paths, model_name, episode_num=100, steps_num=1000, record=False, record_freq=50):
     file_name = ''.join([model_name, '_params', paths['args_set_num']])
     saved_trained_model = ''.join([paths['saved_model_path'], file_name, '.pth'])
     path_to_save_plot = ''.join([paths['saved_plots_path'], 'test_', file_name, '.png'])
+
+    if record:
+        vid_path = ''.join([paths['save_video_path'], f"vid_test_{model_name}.mp4"])
+        video = video_recorder.VideoRecorder(env, vid_path)
 
     agent.load(saved_trained_model)
     agent.set_eval()
@@ -62,7 +61,12 @@ def test(agent, env, paths, model_name, episode_num=100, steps_num=1000):
     for episode in range(1, episode_num + 1):
         state = env.reset()
         score = 0
+
         for step in range(1, steps_num + 1):
+            if (episode - 1) % record_freq == 0 and record:
+                env.render()
+                video.capture_frame()
+
             action = agent.get_action(state, just_greedy=True)
             next_state, reward, done, _ = env.step(action)
             score += reward
@@ -83,29 +87,3 @@ def test(agent, env, paths, model_name, episode_num=100, steps_num=1000):
 
     plt.close()
     env.close()
-
-
-"""
-Utility functions to enable video recording of gym environment 
-and displaying it.
-To enable video, just do "env = wrap_env(env)""
-"""
-
-
-def show_video(num):
-    mp4list = glob.glob(f'video_{num}/*.mp4')
-    if len(mp4list) > 0:
-        mp4 = mp4list[0]
-        video = io.open(mp4, 'r+b').read()
-        encoded = base64.b64encode(video)
-        ipythondisplay.display(HTML(data='''<video alt="test" autoplay 
-                loop controls style="height: 400px;">
-                <source src="data:video/mp4;base64,{0}" type="video/mp4" />
-             </video>'''.format(encoded.decode('ascii'))))
-    else:
-        print("Could not find video")
-
-
-def wrap_env(env, num):
-    env = Monitor(env, f'./video_{num}', force=True)
-    return env
