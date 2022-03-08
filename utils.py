@@ -25,6 +25,11 @@ def quantize_space(actions_range, bins):
     return list(discrete_actions)
 
 
+def initialize_layer(layer, w):
+    layer.weight.data.uniform_(-w, w)
+    layer.bias.data.uniform_(-w, w)
+
+
 def create_plot(scores, model_name, save_path):
     avg = []
     for i in range(len(scores)):
@@ -75,7 +80,7 @@ def test(agent, env, paths, model_name, episode_num=100, steps_num=1000, record=
                 break
 
         scores_list.append(score)
-        print(f'Episode: {episode}, score: {score:.02f}')
+        print(f'Episode: {episode}, Score: {score:.02f}')
 
     plt.axhline(200, c='gray', label='Goal', alpha=0.7)
     plt.plot(scores_list, 'c', label='Score', alpha=0.7)
