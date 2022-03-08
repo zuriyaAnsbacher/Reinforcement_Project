@@ -8,7 +8,7 @@ import torch
 @ dataclass
 class Sample:
     state: np.ndarray
-    action: int
+    action: int or np.ndarray
     reward: float
     next_state: np.ndarray
     done: bool
@@ -24,12 +24,13 @@ class SamplesMemory:
         sample = Sample(state, action, reward, next_state, done)
         self.memory_buffer.append(sample)
 
-    def get_batch(self, batch_size):
+    def get_batch(self, batch_size, continuous_action=False):
         batch = random.sample(self.memory_buffer, batch_size)
         f = lambda x, my_type: torch.tensor(np.vstack(x), device=self.device, dtype=my_type)
 
         state_batch = f([sample.state for sample in batch], torch.float)
-        action_batch = f([sample.action for sample in batch], torch.long)
+        action_batch = f([sample.action for sample in batch], torch.float) if continuous_action \
+            else f([sample.action for sample in batch], torch.long)
         reward_batch = f([sample.reward for sample in batch], torch.float)
         next_state_batch = f([sample.next_state for sample in batch], torch.float)
         done_batch = f([sample.done for sample in batch], torch.float)
