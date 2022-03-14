@@ -1,0 +1,59 @@
+{
+  "ddpg_params1":
+  {
+    "batch_size": 256,
+    "gamma": 0.9849902858712885,
+    "tau": 0.008711453313535608,
+    "lr_actor": 0.0021267736280409758,
+    "lr_critic": 0.0032480168831600692,
+    "learn_freq": 8,
+    "update_factor": 10,
+    "eps_decay": 0.0008006776266587679,
+    "max_steps": 800,
+    "hidden_actor": [256, 128],
+    "hidden_critic": [128, 128]
+},
+  "ddpg_params2":
+  {
+    "batch_size": 256,
+    "gamma": 0.9839151654488487,
+    "tau": 0.009992630209172983,
+    "lr_actor": 0.0024438983667053925,
+    "lr_critic": 0.0057521121550099495,
+    "learn_freq": 10,
+    "update_factor": 10,
+    "eps_decay": 0.0028392874880017534,
+    "max_steps": 800,
+    "hidden_actor": [256, 128],
+    "hidden_critic": [128, 128]
+},
+  "ddpg_params3":
+{
+    "batch_size": 256,
+    "gamma": 0.9890632526627828,
+    "tau": 0.007793696160517172,
+    "lr_actor": 0.0010311962552875483,
+    "lr_critic": 0.0038492371345614476,
+    "learn_freq": 8,
+    "update_factor": 8,
+    "eps_decay": 0.0026761603110326345,
+    "max_steps": 800,
+    "hidden_actor": [128, 128],
+    "hidden_critic": [256, 128]
+},
+  "ddpg_params4":
+{
+    "batch_size": 256,
+    "gamma": 0.9878923925222669,
+    "tau": 0.009589674346520735,
+    "lr_actor": 0.0006297101754621545,
+    "lr_critic": 0.001352581822042291,
+    "learn_freq": 8,
+    "update_factor": 10,
+    "eps_decay": 0.0027274481621411,
+    "max_steps": 1000,
+    "hidden_actor": [128, 128],
+    "hidden_critic": [128, 256]
+}
+
+}
