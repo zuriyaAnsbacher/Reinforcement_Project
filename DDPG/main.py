@@ -1,4 +1,5 @@
 import nni
+import json
 import gym
 import argparse
 import torch
@@ -7,35 +8,44 @@ import sys
 import os
 sys.path.append(os.path.abspath(os.path.join('../..', 'Reinforcement_Project')))
 
-from utils import set_seed
+from utils import set_seed, test
 from Agent import DDPGAgent
 
 
 def main():
     parser = argparse.ArgumentParser()
+    parser.add_argument('--model', default='ddpg')
     parser.add_argument('--train', default=True, help='train agent')
-    parser.add_argument('--episodes', type=int, default=800, help='Number of episodes used in training')
-    parser.add_argument('--max_steps', type=int, default=700, help='maximum steps in episode')
-    parser.add_argument('--set_num', type=str, default='0', help='set idx from nni')
+    parser.add_argument('--use_nni_params', default=True, help='if true, get params from json file')
+    parser.add_argument('--set_num', type=str, default='1', help='set idx from nni')
 
-    parser.add_argument('--lr_actor', type=float, default=0.0005848867245515764, help='learning rate actor network')
-    parser.add_argument('--lr_critic', type=float, default=0.0014302222580882661, help='learning rate critic network')
-    parser.add_argument('--weight_decay', default=0, help='models weight decay factor')
-    parser.add_argument('--max_eps', default=0.7) # 1.0232960877577921
-    parser.add_argument('--min_eps', default=0.01)
-    parser.add_argument('--eps_decay', type=float, default=0.000002414)  # default=0.000002414332405642902, becuase they used '-' for decay
-    parser.add_argument('--batch_size', type=int, default=128)
-    parser.add_argument('--gamma', type=float, default=0.9829207330295889, help='discount factor')
-    parser.add_argument('--learn_freq', type=int, default=5)
-    parser.add_argument('--update_factor', type=int, default=5, help='steps for weights update')
     parser.add_argument('--memory_size', type=int, default=100000, help='memory buffer size')  # default=10000000
-    parser.add_argument('--tau', default=0.0034742948471750195)
-    parser.add_argument('--hidden_actor', default=[64, 64], help='the actor hidden sizes')
-    parser.add_argument('--hidden_critic', default=[256, 256], help='the critic hidden sizes')
+    parser.add_argument('--episodes', type=int, default=800, help='Number of episodes used in training')
+    parser.add_argument('--cuda_device', type=int, default=1)
+    parser.add_argument('--max_eps', default=1.0)
+    parser.add_argument('--min_eps', default=0.01)
     parser.add_argument('--action_noise', choices=['ou1', 'ou2'], default='ou1')
-    parser.add_argument('--cuda_device', type=int, default=0)
+
 
     args = parser.parse_args()
+
+    if args.use_nni_params:
+        with open('best_params.json') as json_file:
+            best_params = json.load(json_file)[f'{args.model}_params{args.set_num}']
+
+    else:
+        best_params = {"batch_size": 64,
+                       "gamma": 0.9806754085998094,
+                       "tau": 0.006188502175143961,
+                       "lr_actor": 0.0021846212925658737,
+                       "lr_critic": 0.002548247661148013,
+                       "learn_freq": 4,
+                       "update_factor": 8,
+                       "eps_decay": 0.9508974596590599,
+                       "max_steps": 700,
+                       "hidden_actor": [64, 64],
+                       "hidden_critic": [64, 64]
+                       }
 
     device = torch.device(f"cuda:{args.cuda_device}" if torch.cuda.is_available() else "cpu")
     print(device)
@@ -58,15 +68,18 @@ def main():
     state_size = env.observation_space.shape[0]  # = 8 (state vector dim)
     action_size = env.action_space.shape[0]   # = 2 (continuous vector dim)
 
-    agent_params = [state_size, action_size, args.batch_size, args.gamma, args.lr_actor,
-                    args.lr_critic, args.tau, args.max_eps, args.min_eps, args.eps_decay,
-                    args.hidden_actor, args.hidden_critic, args.memory_size, args.action_noise, device]
+    agent_params = [state_size, action_size, best_params['batch_size'], best_params['gamma'], best_params['lr_actor'],
+                    best_params['lr_critic'], best_params['tau'], args.max_eps, args.min_eps, best_params['eps_decay'],
+                    best_params['hidden_actor'], best_params['hidden_critic'], args.memory_size, args.action_noise, device]
+
 
     agent = DDPGAgent(*agent_params)
 
     if args.train:
-        train_params = [env, paths, args.episodes, args.max_steps, args.learn_freq, args.update_factor]
+        train_params = [env, paths, args.episodes, best_params['max_steps'], best_params['learn_freq'], best_params['update_factor']]
         agent.train(*train_params)
+    else:
+        test(agent, env, paths, agent.model_name)
 
 
 def main_nni():
@@ -115,5 +128,5 @@ def main_nni():
 
 
 if __name__ == '__main__':
-    # main()
-    main_nni()
+    main()
+    # main_nni()
