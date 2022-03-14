@@ -52,7 +52,7 @@ class DDPGAgent:
     def choose_action(self):
         pass
 
-    def get_action(self, state):
+    def get_action(self, state, just_greedy=False):
         state = torch.tensor(state, dtype=torch.float, device=self.device)
         self.actor.eval()
         with torch.no_grad():
