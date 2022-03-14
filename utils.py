@@ -30,21 +30,24 @@ def initialize_layer(layer, w):
     layer.bias.data.uniform_(-w, w)
 
 
-def create_plot(scores, model_name, save_path):
-    avg = []
-    for i in range(len(scores)):
-        j = 0 if i <= 99 else i - 99
-        avg.append(mean(scores[j:i+1]))
+def create_plot(scores, model_name, save_path, train=True, goal_line=200):
+    if train:
+        avg = []
+        for i in range(len(scores)):
+            j = 0 if i <= 99 else i - 99
+            avg.append(mean(scores[j:i+1]))
 
     fig, axis = plt.subplots()
     axis.clear()
     axis.plot(scores, 'c', label='Score', alpha=0.7)
-    axis.plot(avg, 'orange', label='Average score (up to last 100 episodes)')
-    axis.axhline(200, c='gray', label='Goal', alpha=0.7)
+    if train:
+        axis.plot(avg, 'orange', label='Average score (up to last 100 episodes)')
+    axis.axhline(goal_line, c='gray', label='Goal', alpha=0.7)
     axis.set_xlabel('Episodes')
     axis.set_ylabel('Scores')
     axis.legend(loc='lower right')
-    plt.title(f'{model_name} Train')
+    title = f'{model_name} Train' if train else f'{model_name} Test'
+    plt.title(title)
 
     plt.savefig(save_path)
     plt.close()
